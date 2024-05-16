@@ -1,0 +1,18 @@
+apiVersion: reader.com/v1
+kind: Bookstore
+metadata:
+  labels:
+    app.kubernetes.io/name: kubebuilder
+    app.kubernetes.io/managed-by: kustomize
+  name: bookstore-sample
+spec:
+  # TODO(user): Add fields here
+  deployment-spec:
+    name: book
+    replicas: 3
+    image: parvejmia9/api-server:0.0.4
+    port: 9090
+  service-spec:
+    name: book-service
+    type: NodePort
+    port: 3200
