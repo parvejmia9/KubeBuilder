@@ -28,6 +28,7 @@ import (
 type BookstoreStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	AvailableReplicas int32 `json:"availableReplicas"`
 }
 
 //+kubebuilder:object:root=true
@@ -40,10 +41,6 @@ type Bookstore struct {
 
 	Spec   BookStoreSpec   `json:"spec,omitempty"`
 	Status BookstoreStatus `json:"status,omitempty"`
-}
-
-type BookStoreStatus struct {
-	AvailableReplicas int32 `json:"availableReplicas"`
 }
 
 //+kubebuilder:object:root=true

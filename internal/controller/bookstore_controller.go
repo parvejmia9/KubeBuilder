@@ -99,7 +99,7 @@ func (r *BookstoreReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	fmt.Println("Name: ", req.NamespacedName.Name, "\nNamespace: ", req.NamespacedName.Namespace)
 
 	// slow down the execution to see the changes clearly
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 5)
 	// TODO(user): your logic here
 	var bk readerv1.Bookstore
 	fmt.Println(bk.Spec.DeploymentSpec.Name)
@@ -139,6 +139,19 @@ func (r *BookstoreReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		fmt.Println("Deployment updated")
 	}
 
+	// change status
+
+	if *bk.Spec.DeploymentSpec.Replicas != 0 && *deploy.Spec.Replicas != bk.Status.AvailableReplicas {
+		fmt.Println("Deployment replicas and available replicas are not equal")
+		var bkCopy = bk.DeepCopy()
+		bkCopy.Status.AvailableReplicas = *deploy.Spec.Replicas
+		if err := r.Status().Update(ctx, bkCopy); err != nil {
+			fmt.Println("Error updating status", err)
+			return ctrl.Result{}, err
+		}
+		fmt.Println("Deployment status updated")
+	}
+
 	fmt.Println("Checking Service...")
 	// create or update service
 	var svc corev1.Service
@@ -171,10 +184,9 @@ func (r *BookstoreReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 var (
-	deployOwnerKey = ".metadata.controller"
-	svcOwnerKey    = ".metadata.controller"
-	apiGVStr       = readerv1.GroupVersion.String()
-	ourKind        = "Bookstore"
+	OwnerKey = ".metadata.controller"
+	apiGVStr = readerv1.GroupVersion.String()
+	ourKind  = "Bookstore"
 )
 
 // SetupWithManager sets up the controller with the Manager.
@@ -183,7 +195,7 @@ func (r *BookstoreReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	fmt.Println("...... In Manager ......")
 
 	// for deployment
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &appsv1.Deployment{}, deployOwnerKey, func(object client.Object) []string {
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &appsv1.Deployment{}, OwnerKey, func(object client.Object) []string {
 		// Get the Deployment object
 		deployment := object.(*appsv1.Deployment)
 		// Extract the owner
@@ -203,7 +215,7 @@ func (r *BookstoreReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	// for service
 
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Service{}, deployOwnerKey, func(object client.Object) []string {
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Service{}, OwnerKey, func(object client.Object) []string {
 		// get the service
 		service := object.(*corev1.Service)
 		owner := metav1.GetControllerOf(service)
